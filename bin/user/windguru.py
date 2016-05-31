@@ -135,7 +135,12 @@ class WindGuruThread(weewx.restx.RESTThread):
         self.post_with_retries(req)
 
     def check_response(self, response):
-        logdbg(response)
+        lines = []
+        for line in response:
+            lines.append(line)
+        msg = ''.join(lines)
+        if not msg.startswith('OK'):
+            raise weewx.restx.FailedPost("Server response: %s" % msg)
 
     def get_url(self, in_record):
         # put everything into the right units and scaling
