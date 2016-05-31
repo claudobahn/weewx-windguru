@@ -1,4 +1,4 @@
-# Copyright 2014 Matthew Wall
+# Based on WindFinder plugin, portions copyright 2014 Matthew Wall
 
 """
 This is a WeeWX extension that uploads data to WindGuru.
@@ -17,6 +17,24 @@ Minimal Configuration:
     [[WindGuru]]
         station_id = WINDGURU_STATION_ID
         password = WINDGURU_PASSWORD
+
+WindGuru does not have a published public API, please contact them if you want
+to add support, they were very responsive.
+
+Data is uploaded using a GET request:
+http://www.windguru.cz/upload/api.php?stationtype=weewx&uid=station_id&interval=60&precip_interval=60&wind_avg=windSpeed&wind_max=windGust&wind_direction=windDir&temperature=outTemp&rh=outHumidity&mslp=barometer&precip=rain
+
+Parameters explained:
+interval: seconds, archive interval over which wind information is averaged
+precip_interval: seconds, archive interval over which precipitation is accumulated in a sum
+wind_avg: knots, average wind speed during interval
+wind_max: knots, max wind speed during interval
+wind_min: knots, min wind speed during interval
+wind_direction: degrees, average wind direction during interval
+temperature: celsius
+rh: percent
+mslp: hPa, mean sea level pressure
+precip: mm
 """
 
 import Queue
@@ -99,12 +117,14 @@ class WindGuruThread(weewx.restx.RESTThread):
                  'wind_max': ('windGust', '%.1f'),  # knots
                  'mslp': ('barometer', '%.3f'),  # hPa
                  'rh': ('outHumidity', '%.1f'),  # %
-                 # 'rain': ('rainRate', '%.2f'),  # mm/hr
+                 'rain': ('rain', '%.2f'),  # mm
+                 'interval': ('interval', '%d'),  # seconds
+                 'precip_interval': ('interval', '%d')  # seconds
                  }
 
     def __init__(self, queue, station_id, password, manager_dict,
                  server_url=_SERVER_URL, skip_upload=False,
-                 post_interval=300, max_backlog=sys.maxint, stale=None,
+                 post_interval=60, max_backlog=sys.maxint, stale=None,
                  log_success=True, log_failure=True,
                  timeout=60, max_tries=3, retry_wait=5):
         super(WindGuruThread, self).__init__(queue,
@@ -154,7 +174,7 @@ class WindGuruThread(weewx.restx.RESTThread):
         values = {}
         values['stationtype'] = 'weewx'
         values['uid'] = self.station_id
-        # TODO: Password md5
+        # TODO: Password md5, though WindGuru doesn't care at the moment
         # values['password'] = self.password
         time_tt = time.localtime(record['dateTime'])
         values['date'] = time.strftime("%d.%m.%Y", time_tt)
