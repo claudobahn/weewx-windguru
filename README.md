@@ -3,14 +3,17 @@ WeeWX WindGuru - WeeWX extension that publishes data to WindGuru
 Based in large part on the [WindFinder extension](https://github.com/weewx/weewx/wiki/windfinder) written by Matthew Wall.
 
 ## Installation
-1. Download the extension
+1. Register your WindGuru station
+    https://stations.windguru.cz/register.php
+
+2. Download the extension
     > wget wget -O weewx-windguru.zip https://github.com/claudobahn/weewx-windguru/archive/master.zip
 
-2. Run the extension installer:
+3. Run the extension installer:
 
    > wee_extension --install weewx-windguru.zip
 
-2. Update weewx.conf:
+4. Update weewx.conf:
 
     ```
     [StdRESTful]
@@ -19,7 +22,7 @@ Based in large part on the [WindFinder extension](https://github.com/weewx/weewx
             password = WindGuru_Password
     ```
 
-3. Restart WeeWX
+5. Restart WeeWX
 
     > sudo /etc/init.d/weewx stop
 
