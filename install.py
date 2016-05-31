@@ -17,7 +17,7 @@ class WindGuruInstaller(ExtensionInstaller):
                 config={
                     'StdRESTful': {
                         'WindGuru': {
-                            'station_id': 'INSERT_WINDGURU_STATION_ID',
-                            'password': 'INSERT_WINDGURU_PASSWORD'}}},
+                            'station_id': 'replace_me',
+                            'password': 'replace_me'}}},
                 files=[('bin/user', ['bin/user/windguru.py'])]
         )
