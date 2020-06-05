@@ -167,8 +167,8 @@ class WindGuruThread(weewx.restx.RESTThread):
         lines = []
         for line in response:
             lines.append(line)
-        msg = ''.join(lines)
-        if not msg.startswith('OK'):
+        msg = b''.join(lines)
+        if not msg.decode('utf-8').startswith('OK'):
             raise weewx.restx.FailedPost("Server response: %s" % msg)
 
     def format_url(self, in_record):
