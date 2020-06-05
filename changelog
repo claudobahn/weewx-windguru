@@ -1,2 +1,5 @@
+0.2 08may2020
+* Ported to Python 3 and WeeWX V4. -tk
+
 0.1 30 May 2016
 * Initial release as a packaged WeeWX extension
