@@ -51,13 +51,13 @@ except ImportError:
     from urllib import urlencode
 import re
 import sys
-import time
+import hashlib
 
 import weewx
 import weewx.restx
 import weewx.units
 
-VERSION = "0.2"
+VERSION = "0.3"
 
 if weewx.__version__ < "3":
     raise weewx.UnsupportedFeature("weewx 3 is required, found %s" %
@@ -129,17 +129,17 @@ class WindGuru(weewx.restx.StdRESTbase):
         self.archive_queue.put(event.record)
 
 
+
+
 class WindGuruThread(weewx.restx.RESTThread):
     _SERVER_URL = 'http://www.windguru.cz/upload/api.php'
     _DATA_MAP = {'temperature': ('outTemp', '%.1f'),  # C
                  'wind_direction': ('windDir', '%.0f'),  # degree
                  'wind_avg': ('windSpeed', '%.1f'),  # knots
                  'wind_max': ('windGust', '%.1f'),  # knots
-                 'mslp': ('barometer', '%.3f'),  # hPa
                  'rh': ('outHumidity', '%.1f'),  # %
-                 'rain': ('rain', '%.2f'),  # mm
-                 'interval': ('interval', '%d'),  # seconds
-                 'precip_interval': ('interval', '%d')  # seconds
+                 'mslp': ('barometer', '%.3f'),  # hPa
+                 'precip': ('hourRain', '%.2f'),  # mm
                  }
 
     def __init__(self, queue, station_id, password, manager_dict,
@@ -174,26 +174,33 @@ class WindGuruThread(weewx.restx.RESTThread):
     def format_url(self, in_record):
         # put everything into the right units and scaling
         record = weewx.units.to_METRICWX(in_record)
+
+        # authentication
+        salt = "%d~salted" % record['dateTime']
+        hash = hashlib.md5((salt + self.station_id + self.password).encode('utf-8')).hexdigest()
+
         if 'windSpeed' in record and record['windSpeed'] is not None:
             record['windSpeed'] = _mps_to_knot(record['windSpeed'])
         if 'windGust' in record and record['windGust'] is not None:
             record['windGust'] = _mps_to_knot(record['windGust'])
 
-        # put data into expected structure and format
-        time_tt = time.localtime(record['dateTime'])
         values = {
             'stationtype': 'weewx',
             'uid': self.station_id,
-            'date': time.strftime("%d.%m.%Y", time_tt),
-            'time': time.strftime("%H:%M", time_tt)
+            'salt': salt,
+            'hash': hash,
+            'interval': self.post_interval,
+            'percip_interval': 3600 # hourly, because we pass hourRain as percipation value
         }
-        # TODO: Password md5, though WindGuru doesn't care at the moment
-        # values['password'] = self.password
+
         for key in self._DATA_MAP:
             rkey = self._DATA_MAP[key][0]
             if rkey in record and record[rkey] is not None:
                 values[key] = self._DATA_MAP[key][1] % record[rkey]
+
         url = self.server_url + '?' + urlencode(values)
+
         if weewx.debug >= 2:
-            logdbg('url: %s' % re.sub(r"password=[^\&]*", "password=XXX", url))
+            logdbg('url: %s' % url)
+
         return url
